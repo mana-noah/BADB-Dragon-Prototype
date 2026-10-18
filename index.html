@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>《劫火》実戦闘プロトタイプ v0.1</title>
+<style>
+:root{color-scheme:dark;--bg:#111315;--panel:#1c2024;--line:#454b50;--text:#f3eee6;--muted:#b5b7b9;--fire:#ff8755;--gold:#ffc875;--good:#8ed6ad;--danger:#ff7777}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#42241d 0,#171719 48%,#0e1012 100%);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif}
+main{max-width:900px;margin:auto;padding:18px 14px 40px}.eyebrow{letter-spacing:.14em;color:var(--gold);font-size:.78rem;font-weight:700}h1{margin:.2rem 0;font-size:clamp(1.5rem,5vw,2.4rem)}h2{font-size:1.08rem;margin:0 0 10px}p{margin:.4rem 0}.muted{color:var(--muted);font-size:.9rem}
+.panel{background:rgba(28,32,36,.94);border:1px solid var(--line);border-radius:14px;padding:15px;margin:12px 0;box-shadow:0 8px 24px #0003}
+.hero{background:linear-gradient(110deg,#381d19,#222124 70%);border-color:#75452f}.dragon-name{color:#ffb18b;font-size:1.2rem;font-weight:750}.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stat{background:#111416;border:1px solid #373d42;border-radius:10px;padding:10px}.stat-label{font-size:.8rem;color:var(--muted)}.stat-value{font-size:1.1rem;font-weight:700}.bar{height:8px;background:#383d42;border-radius:99px;overflow:hidden;margin-top:6px}.fill{height:100%;width:50%;background:var(--fire);transition:width .25s}.blue{background:#70b9e8}.gold{background:var(--gold)}.green{background:var(--good)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.cmd{min-height:78px;text-align:left;background:#272c31;border:1px solid #555d63;border-radius:10px;color:var(--text);padding:11px;cursor:pointer;font:inherit}.cmd strong{display:block;margin-bottom:3px}.cmd small{display:block;color:#c1c5c8;font-size:.8rem}.cmd:hover:not(:disabled){border-color:var(--gold);background:#35312b}.cmd:disabled{opacity:.35;cursor:not-allowed}.cmd.primary{border-color:#a95d3d;background:#3a2822}.subcommands{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.subcommands button,.utility{background:#292e33;border:1px solid #555d63;border-radius:9px;color:var(--text);padding:9px 12px;font:inherit;cursor:pointer}.subcommands button:disabled{opacity:.35;cursor:not-allowed}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.tag{display:inline-block;padding:2px 8px;border-radius:99px;background:#37312b;color:#ffd7a4;font-size:.8rem}.log{min-height:125px;max-height:300px;overflow:auto;display:flex;flex-direction:column;gap:8px}.log p{padding:8px 10px;border-left:3px solid #7d858b;background:#141719;border-radius:0 7px 7px 0;font-size:.92rem}.log p.good{border-color:var(--good)}.log p.warn{border-color:var(--fire)}.log p.bad{border-color:var(--danger)}.footer{display:flex;gap:8px;flex-wrap:wrap}.footer button{flex:1}.statusline{font-weight:650;color:var(--gold)}.hidden{display:none!important}
+@media(min-width:650px){.stats{grid-template-columns:repeat(4,minmax(0,1fr))}.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div class="eyebrow">NOAH / BATTLE LAB · BUILD 0.1</div>
+<h1>《劫火》実戦闘プロトタイプ</h1>
+<p class="muted">イグニス＝ヴァルガ — 感情を読み、共鳴を使い、火山の災害を鎮めろ。</p>
+</header>
+<section class="panel hero">
+<div class="row"><div><div class="dragon-name">イグニス＝ヴァルガ</div><div class="muted">神獣龍《劫火》</div></div><span id="battleTag" class="tag">戦闘中</span></div>
+<p id="dragonLine">龍の呼吸に合わせて、火口の奥で赤い光が脈打っている。</p>
+<div class="stats">
+<div class="stat"><div class="stat-label">プレイヤー HP</div><div class="stat-value" id="playerHpText">100 / 100</div><div class="bar"><div id="playerHpBar" class="fill green"></div></div></div>
+<div class="stat"><div class="stat-label">龍の体力（撃破条件ではない）</div><div class="stat-value" id="dragonHpText">180 / 180</div><div class="bar"><div id="dragonHpBar" class="fill"></div></div></div>
+<div class="stat"><div class="stat-label">共鳴値</div><div class="stat-value" id="resText">10 / 100 · 沈黙</div><div class="bar"><div id="resBar" class="fill blue"></div></div></div>
+<div class="stat"><div class="stat-label">EP</div><div class="stat-value" id="epText">30 / 30</div><div class="bar"><div id="epBar" class="fill gold"></div></div></div>
+</div>
+</section>
+<section class="panel">
+<div class="row"><h2>戦場の状態</h2><span id="turnText" class="tag">TURN 1</span></div>
+<div class="stats">
+<div class="stat"><div class="stat-label">龍の感情</div><div class="stat-value" id="emotionText">怒り</div><p class="muted" id="emotionHint">攻撃的だが、行動の癖を読みやすい。</p></div>
+<div class="stat"><div class="stat-label">火山活動</div><div class="stat-value" id="envText">穏やか</div><p class="muted" id="envHint">溶岩の流れはまだ緩やかだ。</p></div>
+<div class="stat"><div class="stat-label">次の危険</div><div class="stat-value" id="intentText">火爪の予兆</div><p class="muted" id="intentHint">攻撃を重ねるほど、龍の怒りが高まる。</p></div>
+<div class="stat"><div class="stat-label">鎮静の進行</div><div class="stat-value" id="calmText">0 / 3</div><div class="bar"><div id="calmBar" class="fill green"></div></div><p class="muted">3回の鎮静成功で災害収束</p></div>
+</div>
+<p id="readout" class="statusline">感知で龍の感情を読み、共鳴を使う機会を探そう。</p>
+</section>
+<section class="panel">
+<h2>コマンド</h2>
+<div class="grid">
+<button class="cmd" id="sense"><strong>感知</strong><small>弱点と感情を読む · 共鳴＋15<br>このターン敵は攻撃しない</small></button>
+<button class="cmd" id="attack"><strong>攻撃</strong><small>通常攻撃 ×1.0 · 共鳴＋5<br>龍の怒りが高まることがある</small></button>
+<button class="cmd primary" id="resonance"><strong>共鳴攻撃</strong><small>共鳴20以上 · EP消費<br>読みを合わせれば鎮静の好機</small></button>
+<button class="cmd" id="partner"><strong>オトモン連携</strong><small>共鳴20以上 · EP10<br>連携と感情の変化を試す</small></button>
+<button class="cmd" id="wait"><strong>様子見</strong><small>共鳴＋10 · 被ダメージ半減<br>危険な攻撃をしのぐ</small></button>
+</div>
+<div id="resOptions" class="hidden">
+<p class="muted">共鳴攻撃の種類を選択</p>
+<div class="subcommands">
+<button data-res="small">小 ×1.7 · EP5 · 共鳴20+</button>
+<button data-res="medium">中 ×3.5 · EP10 · 共鳴35+</button>
+<button data-res="large">大 ×4.5 · EP20 · 共鳴35+</button>
+<button data-res="area">範囲 · EP30 · 共鳴45+</button>
+</div>
+</div>
+</section>
+<section class="panel">
+<div class="row"><h2>戦闘ログ</h2><button class="utility" id="restart">最初から</button></div>
+<div id="log" class="log" aria-live="polite"></div>
+</section>
+<p class="muted">検証版：数値・鎮静条件・敵行動は仮設定。既存NOAH仕様への接続前にプレイ感と数値の整合性を監査する。</p>
+</main>
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const initial=()=>({turn:1,php:100,dhp:180,res:10,ep:30,anger:0,emotion:"怒り",calm:0,read:false,half:false,done:false,partnerMood:"安定",logs:[]});
+let s=initial();
+const max=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const addLog=(msg,type="")=>{s.logs.unshift({msg,type});s.logs=s.logs.slice(0,18)};
+function resonanceState(){return s.res<=20?"沈黙":s.res<=60?"共鳴":s.res<=90?"高揚":"過共鳴"}
+function envState(){return s.anger<=1?"穏やか":s.anger<=3?"活発":"激化"}
+function render(){
+$("playerHpText").textContent=s.php+" / 100";$("dragonHpText").textContent=s.dhp+" / 180";$("resText").textContent=s.res+" / 100 · "+resonanceState();$("epText").textContent=s.ep+" / 30";
+$("playerHpBar").style.width=s.php+"%";$("dragonHpBar").style.width=(s.dhp/180*100)+"%";$("resBar").style.width=s.res+"%";$("epBar").style.width=(s.ep/30*100)+"%";
+$("turnText").textContent="TURN "+s.turn;$("emotionText").textContent=s.emotion;$("envText").textContent=envState();$("calmText").textContent=s.calm+" / 3";$("calmBar").style.width=(s.calm/3*100)+"%";
+$("envHint").textContent=s.anger<=1?"溶岩の流れはまだ緩やかだ。":s.anger<=3?"亀裂から溶岩が噴き、熱気が増している。":"火山雷と灰嵐が重なり、戦場そのものが荒れている。";
+$("emotionHint").textContent=s.emotion==="怒り"?"攻撃的だが、行動の癖を読みやすい。":s.emotion==="絶望"?"動きが鈍る一方、自傷による感情リセットに注意。":s.emotion==="興奮"?"連続行動の危険がある。":s.emotion==="恐怖"?"攻撃頻度は下がり、隙が生まれる。":s.emotion==="憂鬱"?"行動を止めることがあるが、大技に注意。":"動きは鈍いが、防御を崩しにくい。";
+$("intentText").textContent=s.anger>=4?"火山雷の予兆":s.anger>=2?"溶岩噴出の予兆":"火爪の予兆";
+$("intentHint").textContent=s.anger>=4?"次の攻撃は非常に危険。様子見も選択肢だ。":s.anger>=2?"地面の亀裂から溶岩が噴き出そうとしている。":"龍の前脚に熱が集まっている。";
+$("readout").textContent=s.read?"感情を読んだ。次の共鳴攻撃で鎮静を試みられる。":"感知してから共鳴攻撃を選ぶと、鎮静の機会をつかめる。";
+$("battleTag").textContent=s.done?(s.calm>=3?"災害収束":"戦闘終了"):"戦闘中";
+$("dragonLine").textContent=s.done?(s.calm>=3?"龍は息を整え、火口の赤い脈動がゆっくりと静まっていく。":"戦闘は終了した。災害はまだ鎮まっていない。"):s.anger>=4?"龍の咆哮と同時に火山雷が走る。大地が揺れている。":s.anger>=2?"龍の呼吸に合わせ、地割れから赤い溶岩が噴き上がる。":"龍の呼吸に合わせて、火口の奥で赤い光が脈打っている。";
+$("log").innerHTML=s.logs.map(x=>'<p class="'+x.type+'">'+escapeHtml(x.msg)+'</p>').join("");
+["sense","attack","resonance","partner","wait"].forEach(id=>$(id).disabled=s.done);
+$("resOptions").classList.toggle("hidden",s.done||!$("resOptions").dataset.open);
+document.querySelectorAll("[data-res]").forEach(b=>{let k=b.dataset.res;let req={small:[20,5],medium:[35,10],large:[35,20],area:[45,30]}[k];b.disabled=s.done||s.res<req[0]||s.ep<req[1]});
+}
+function escapeHtml(str){return str.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function finish(win){s.done=true;addLog(win?"鎮静成功。龍と火山の活動が鎮まり、自然の循環が戻り始めた。":"戦闘不能。龍と火山はまだ鎮まっていない。",win?"good":"bad");render()}
+function postAction(skipEnemy=false){
+ if(s.done)return;
+ if(!skipEnemy)enemyTurn();
+ if(s.php<=0){finish(false);return}
+ s.ep=max(s.ep+5,0,30);
+ if(s.res>=91&&Math.random()<.2){s.res=max(s.res-8,0,100);s.php=max(s.php-8,0,100);addLog("過共鳴が揺らぎ、オトモンが不安定になる。共鳴が−8、HPが−8。","warn")}
+ if(s.php<=0){finish(false);return}
+ s.turn++;render()
+}
+function enemyTurn(){
+ if(s.emotion==="恐怖"&&Math.random()<.5){addLog("龍は一瞬ひるみ、距離を取った。","");return}
+ if(s.emotion==="憂鬱"&&Math.random()<.45){addLog("龍は動きを止めた……火口の奥で不穏な光が揺れる。","warn");return}
+ let dmg=(s.anger>=4?25:s.anger>=2?17:11);
+ if(s.emotion==="怒り")dmg+=4;
+ if(s.emotion==="興奮")dmg+=7;
+ if(s.emotion==="悲哀")dmg=Math.max(5,dmg-5);
+ if(s.emotion==="絶望")dmg=Math.max(4,dmg-7);
+ if(s.half){dmg=Math.ceil(dmg/2);s.half=false}
+ s.php=max(s.php-dmg,0,100);addLog("龍の"+(s.anger>=4?"火山雷":s.anger>=2?"溶岩噴出":"火爪")+"！ HP −"+dmg,s.php<30?"bad":"warn");
+ if(s.emotion==="絶望"&&Math.random()<.3){s.emotion="恐怖";s.anger=max(s.anger-1,0,5);addLog("龍は自傷し、絶望から恐怖へ移った。怒りの勢いがわずかに落ちる。","")}
+}
+function setRes(v){s.res=max(v,0,100)}
+function sensed(){s.read=true;setRes(s.res+15);addLog("龍の感情は「"+s.emotion+"」。"+(s.anger>=2?"怒りが火山活動に伝わっている。今なら共鳴で鎮静を試みられる。":"呼吸と火口の脈動が重なっている。感情の変化を見極めよう。"),"good");$("resOptions").dataset.open="";postAction(true)}
+$("sense").onclick=()=>{if(s.done)return;sensed()};
+$("attack").onclick=()=>{if(s.done)return;s.dhp=max(s.dhp-10,1,180);setRes(s.res+5);s.anger=max(s.anger+1,0,5);s.read=false;addLog("通常攻撃。龍に10ダメージ、共鳴＋5。龍の怒りと火山活動が高まる。",s.anger>=3?"warn":"");postAction()};
+$("wait").onclick=()=>{if(s.done)return;setRes(s.res+10);s.half=true;s.read=false;addLog("様子見。共鳴＋10。次に受ける攻撃のダメージを半減する。","");postAction()};
+$("partner").onclick=()=>{if(s.done||s.res<20||s.ep<10)return;setRes(s.res+8);s.ep-=10;s.read=false;s.partnerMood=s.php<35?"庇護":"興奮";let dmg=15;s.dhp=max(s.dhp-dmg,1,180);addLog("オトモン連携成功。龍に"+dmg+"ダメージ、共鳴＋8、EP−10。オトモンの感情："+s.partnerMood+"。","good");postAction()};
+$("resonance").onclick=()=>{if(s.done)return;$("resOptions").dataset.open=$("resOptions").dataset.open?"":"1";render()};
+document.querySelectorAll("[data-res]").forEach(b=>b.addEventListener("click",()=>{
+ if(s.done)return;let k=b.dataset.res;let cfg={small:{req:20,ep:5,mul:1.7,label:"小共鳴攻撃"},medium:{req:35,ep:10,mul:3.5,label:"中共鳴攻撃"},large:{req:35,ep:20,mul:4.5,label:"大共鳴攻撃"},area:{req:45,ep:30,mul:3,label:"範囲共鳴"}}[k];
+ if(s.res<cfg.req||s.ep<cfg.ep)return;
+ s.ep-=cfg.ep;let damage=Math.round(10*cfg.mul);s.dhp=max(s.dhp-damage,1,180);setRes(s.res-5);let calmSuccess=s.read&&s.anger>=1;
+ if(calmSuccess){s.calm++;s.anger=max(s.anger-2,0,5);s.emotion="悲哀";addLog(cfg.label+"が龍の感情と噛み合った。"+damage+"ダメージ。怒りが鎮まり、鎮静進行＋1。","good");}
+ else{if(s.read)addLog(cfg.label+"で"+damage+"ダメージ。しかし龍の感情と噛み合わず、鎮静には至らない。","warn");else addLog(cfg.label+"で"+damage+"ダメージ。感情を読んでいないため、鎮静効果は発生しない。","")}
+ s.read=false;
+ if(s.calm>=3){finish(true);return}
+ if(s.dhp<=1){addLog("龍は倒れない。HPが尽きる前に鎮静を成立させる必要がある。","warn")}
+ postAction();
+}));
+$("restart").onclick=()=>{s=initial();$("resOptions").dataset.open="";addLog("火口の前に立つ。龍の呼吸と火山の脈動が重なっている。");render()};
+addLog("火口の前に立つ。龍の呼吸と火山の脈動が重なっている。");render();
+})();
+</script>
+</body>
+</html>
