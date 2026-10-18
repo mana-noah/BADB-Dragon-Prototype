@@ -117,7 +117,7 @@ function enemyTurn(){
 function setRes(v){s.res=max(v,0,100)}
 function sensed(){s.read=true;setRes(s.res+15);addLog("龍の感情は「"+s.emotion+"」。"+(s.anger>=2?"怒りが火山活動に伝わっている。今なら共鳴で鎮静を試みられる。":"呼吸と火口の脈動が重なっている。感情の変化を見極めよう。"),"good");$("resOptions").dataset.open="";postAction(true)}
 $("sense").onclick=()=>{if(s.done)return;sensed()};
-$("attack").onclick=()=>{if(s.done)return;s.dhp=max(s.dhp-10,1,180);setRes(s.res+5);s.anger=max(s.anger+1,0,5);s.read=false;addLog("通常攻撃。龍に10ダメージ、共鳴＋5。龍の怒りと火山活動が高まる。",s.anger>=3?"warn":"");postAction()};
+$("attack").onclick=()=>{if(s.done)return;s.dhp=max(s.dhp-10,1,180);setRes(s.res+5);s.anger=max(s.anger+1,0,5);s.read=false;if(s.anger>=5&&s.emotion==="怒り"){s.emotion="絶望";addLog("怒りが極まり、龍は絶望へ遷移した。火山活動は最大級に激化している。","bad")}addLog("通常攻撃。龍に10ダメージ、共鳴＋5。龍の怒りと火山活動が高まる。",s.anger>=3?"warn":"");postAction()};
 $("wait").onclick=()=>{if(s.done)return;setRes(s.res+10);s.half=true;s.read=false;addLog("様子見。共鳴＋10。次に受ける攻撃のダメージを半減する。","");postAction()};
 $("partner").onclick=()=>{if(s.done||s.res<20||s.ep<10)return;setRes(s.res+8);s.ep-=10;s.read=false;s.partnerMood=s.php<35?"庇護":"興奮";let dmg=15;s.dhp=max(s.dhp-dmg,1,180);addLog("オトモン連携成功。龍に"+dmg+"ダメージ、共鳴＋8、EP−10。オトモンの感情："+s.partnerMood+"。","good");postAction()};
 $("resonance").onclick=()=>{if(s.done)return;$("resOptions").dataset.open=$("resOptions").dataset.open?"":"1";render()};
