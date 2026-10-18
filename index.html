@@ -53,10 +53,10 @@ main{max-width:900px;margin:auto;padding:18px 14px 40px}.eyebrow{letter-spacing:
 <div id="resOptions" class="hidden">
 <p class="muted">共鳴攻撃の種類を選択</p>
 <div class="subcommands">
-<button data-res="small">小 ×1.7 · EP5 · 共鳴20+</button>
-<button data-res="medium">中 ×3.5 · EP10 · 共鳴35+</button>
-<button data-res="large">大 ×4.5 · EP20 · 共鳴35+</button>
-<button data-res="area">範囲 · EP30 · 共鳴45+</button>
+<button data-res="small">小 ×1.7 · EP5 · 共鳴20+<br>安定型：鎮静＋1</button>
+<button data-res="medium">中 ×3.5 · EP10 · 共鳴35+<br>調律型：怒りを大きく下げる</button>
+<button data-res="large">大 ×4.5 · EP20 · 共鳴35+<br>集中型：怒りが強い時に鎮静＋2</button>
+<button data-res="area">範囲 ×3.0 · EP30 · 共鳴45+<br>制圧型：鎮静＋1、次の被害軽減</button>
 </div>
 </div>
 </section>
@@ -124,9 +124,24 @@ $("resonance").onclick=()=>{if(s.done)return;$("resOptions").dataset.open=$("res
 document.querySelectorAll("[data-res]").forEach(b=>b.addEventListener("click",()=>{
  if(s.done)return;let k=b.dataset.res;let cfg={small:{req:20,ep:5,mul:1.7,label:"小共鳴攻撃"},medium:{req:35,ep:10,mul:3.5,label:"中共鳴攻撃"},large:{req:35,ep:20,mul:4.5,label:"大共鳴攻撃"},area:{req:45,ep:30,mul:3,label:"範囲共鳴"}}[k];
  if(s.res<cfg.req||s.ep<cfg.ep)return;
- s.ep-=cfg.ep;let damage=Math.round(10*cfg.mul);s.dhp=max(s.dhp-damage,1,180);setRes(s.res-5);let calmSuccess=s.read&&(s.emotion==="怒り"||s.emotion==="悲哀");
- if(calmSuccess){s.calm++;s.anger=max(s.anger-2,0,5);s.emotion="悲哀";addLog(cfg.label+"が龍の感情と噛み合った。"+damage+"ダメージ。怒りが鎮まり、鎮静進行＋1。","good");}
- else{if(s.read)addLog(cfg.label+"で"+damage+"ダメージ。しかし今の感情には共鳴が噛み合わず、鎮静には至らない。","warn");else addLog(cfg.label+"で"+damage+"ダメージ。感情を読んでいないため、鎮静効果は発生しない。","")}
+ s.ep-=cfg.ep;let damage=Math.round(10*cfg.mul);s.dhp=max(s.dhp-damage,1,180);setRes(s.res-5);
+ let readMatch=s.read&&(s.emotion==="怒り"||s.emotion==="悲哀");
+ let calmSuccess=readMatch&&(k!=="large"||(s.emotion==="怒り"&&s.anger>=2));
+ if(calmSuccess){
+   let progress=k==="large"?2:1;
+   s.calm=max(s.calm+progress,0,3);
+   if(k==="small")s.anger=max(s.anger-2,0,5);
+   if(k==="medium")s.anger=max(s.anger-3,0,5);
+   if(k==="large")s.anger=max(s.anger-2,0,5);
+   if(k==="area"){s.anger=max(s.anger-2,0,5);s.half=true;}
+   s.emotion="悲哀";
+   let extra=k==="medium"?" 怒りを大きく鎮めた。":k==="large"?" 強い怒りを捉え、鎮静が大きく進んだ。":k==="area"?" 火山活動も抑え込み、次の被害を軽減する。":" 怒りが鎮まり始めた。";
+   addLog(cfg.label+"が龍の感情と噛み合った。"+damage+"ダメージ。鎮静進行＋"+progress+"。"+extra,"good");
+ }else{
+   if(s.read&&k==="large"&&s.emotion==="怒り"&&s.anger<2){s.anger=max(s.anger+1,0,5);addLog(cfg.label+"で"+damage+"ダメージ。しかし怒りがまだ十分に高まっておらず、集中が噛み合わない。怒りが少し高まった。","warn");}
+   else if(s.read)addLog(cfg.label+"で"+damage+"ダメージ。しかし今の感情には共鳴が噛み合わず、鎮静には至らない。","warn");
+   else addLog(cfg.label+"で"+damage+"ダメージ。感情を読んでいないため、鎮静効果は発生しない。","");
+ }
  s.read=false;
  if(s.calm>=3){finish(true);return}
  if(s.dhp<=1){addLog("龍は倒れない。HPが尽きる前に鎮静を成立させる必要がある。","warn")}
