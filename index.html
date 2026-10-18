@@ -83,7 +83,7 @@ $("envHint").textContent=s.anger<=1?"溶岩の流れはまだ緩やかだ。":s.
 $("emotionHint").textContent=s.emotion==="怒り"?"攻撃的だが、行動の癖を読みやすい。":s.emotion==="絶望"?"動きが鈍る一方、自傷による感情リセットに注意。":s.emotion==="興奮"?"連続行動の危険がある。":s.emotion==="恐怖"?"攻撃頻度は下がり、隙が生まれる。":s.emotion==="憂鬱"?"行動を止めることがあるが、大技に注意。":"動きは鈍いが、防御を崩しにくい。";
 $("intentText").textContent=s.anger>=4?"火山雷の予兆":s.anger>=2?"溶岩噴出の予兆":"火爪の予兆";
 $("intentHint").textContent=s.anger>=4?"次の攻撃は非常に危険。様子見も選択肢だ。":s.anger>=2?"地面の亀裂から溶岩が噴き出そうとしている。":"龍の前脚に熱が集まっている。";
-$("readout").textContent=s.read?"感情を読んだ。次の共鳴攻撃で鎮静を試みられる。":"感知してから共鳴攻撃を選ぶと、鎮静の機会をつかめる。";
+$("readout").textContent=s.read?"感情を読めている。今の感情に合わせて共鳴攻撃を使おう。":"まず感知。表示された感情を確認してから共鳴攻撃を選ぼう。";
 $("battleTag").textContent=s.done?(s.calm>=3?"災害収束":"戦闘終了"):"戦闘中";
 $("dragonLine").textContent=s.done?(s.calm>=3?"龍は息を整え、火口の赤い脈動がゆっくりと静まっていく。":"戦闘は終了した。災害はまだ鎮まっていない。"):s.anger>=4?"龍の咆哮と同時に火山雷が走る。大地が揺れている。":s.anger>=2?"龍の呼吸に合わせ、地割れから赤い溶岩が噴き上がる。":"龍の呼吸に合わせて、火口の奥で赤い光が脈打っている。";
 $("log").innerHTML=s.logs.map(x=>'<p class="'+x.type+'">'+escapeHtml(x.msg)+'</p>').join("");
@@ -115,7 +115,7 @@ function enemyTurn(){
  if(s.emotion==="絶望"&&Math.random()<.3){s.emotion="恐怖";s.anger=max(s.anger-1,0,5);addLog("龍は自傷し、絶望から恐怖へ移った。怒りの勢いがわずかに落ちる。","")}
 }
 function setRes(v){s.res=max(v,0,100)}
-function sensed(){s.read=true;setRes(s.res+15);addLog("龍の感情は「"+s.emotion+"」。"+(s.anger>=2?"怒りが火山活動に伝わっている。今なら共鳴で鎮静を試みられる。":"呼吸と火口の脈動が重なっている。感情の変化を見極めよう。"),"good");$("resOptions").dataset.open="";postAction(true)}
+function sensed(){s.read=true;setRes(s.res+15);addLog("龍の感情は「"+s.emotion+"」。"+(s.emotion==="怒り"?"怒りの波が火口の脈動に重なる。共鳴攻撃で鎮静を試みよう。":s.emotion==="悲哀"?"怒りの勢いは弱まった。呼吸に合わせて共鳴攻撃を続けよう。":"この感情には、まだ有効な鎮静手段が分からない。"),"good");$("resOptions").dataset.open="";postAction(true)}
 $("sense").onclick=()=>{if(s.done)return;sensed()};
 $("attack").onclick=()=>{if(s.done)return;s.dhp=max(s.dhp-10,1,180);setRes(s.res+5);s.anger=max(s.anger+1,0,5);s.read=false;if(s.anger>=5&&s.emotion==="怒り"){s.emotion="絶望";addLog("怒りが極まり、龍は絶望へ遷移した。火山活動は最大級に激化している。","bad")}addLog("通常攻撃。龍に10ダメージ、共鳴＋5。龍の怒りと火山活動が高まる。",s.anger>=3?"warn":"");postAction()};
 $("wait").onclick=()=>{if(s.done)return;setRes(s.res+10);s.half=true;s.read=false;addLog("様子見。共鳴＋10。次に受ける攻撃のダメージを半減する。","");postAction()};
@@ -124,9 +124,9 @@ $("resonance").onclick=()=>{if(s.done)return;$("resOptions").dataset.open=$("res
 document.querySelectorAll("[data-res]").forEach(b=>b.addEventListener("click",()=>{
  if(s.done)return;let k=b.dataset.res;let cfg={small:{req:20,ep:5,mul:1.7,label:"小共鳴攻撃"},medium:{req:35,ep:10,mul:3.5,label:"中共鳴攻撃"},large:{req:35,ep:20,mul:4.5,label:"大共鳴攻撃"},area:{req:45,ep:30,mul:3,label:"範囲共鳴"}}[k];
  if(s.res<cfg.req||s.ep<cfg.ep)return;
- s.ep-=cfg.ep;let damage=Math.round(10*cfg.mul);s.dhp=max(s.dhp-damage,1,180);setRes(s.res-5);let calmSuccess=s.read&&s.anger>=1;
+ s.ep-=cfg.ep;let damage=Math.round(10*cfg.mul);s.dhp=max(s.dhp-damage,1,180);setRes(s.res-5);let calmSuccess=s.read&&(s.emotion==="怒り"||s.emotion==="悲哀");
  if(calmSuccess){s.calm++;s.anger=max(s.anger-2,0,5);s.emotion="悲哀";addLog(cfg.label+"が龍の感情と噛み合った。"+damage+"ダメージ。怒りが鎮まり、鎮静進行＋1。","good");}
- else{if(s.read)addLog(cfg.label+"で"+damage+"ダメージ。しかし龍の感情と噛み合わず、鎮静には至らない。","warn");else addLog(cfg.label+"で"+damage+"ダメージ。感情を読んでいないため、鎮静効果は発生しない。","")}
+ else{if(s.read)addLog(cfg.label+"で"+damage+"ダメージ。しかし今の感情には共鳴が噛み合わず、鎮静には至らない。","warn");else addLog(cfg.label+"で"+damage+"ダメージ。感情を読んでいないため、鎮静効果は発生しない。","")}
  s.read=false;
  if(s.calm>=3){finish(true);return}
  if(s.dhp<=1){addLog("龍は倒れない。HPが尽きる前に鎮静を成立させる必要がある。","warn")}
